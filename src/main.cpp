@@ -13,25 +13,50 @@ const int gWindowHeight = 600;
 
 bool gFullScreen = false;
 
+GLFWwindow* gWindow = NULL;
+
 void glfw_onKeyPressed(GLFWwindow* window, int key, int scancode, int action, int mode);
 void showFPS(GLFWwindow* window);
 
+bool initOpenGL();
+
 int main() 
 {
-	if (!glfwInit()) 
+	if (!initOpenGL()) 
+	{
+		std::cerr << "OpenGL intialization failed" << std::endl;
+		return -1;
+	}
+
+	while (!glfwWindowShouldClose(gWindow)) 
+	{
+		showFPS(gWindow);
+		glfwPollEvents();
+
+		
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		glfwSwapBuffers(gWindow); 
+	}
+
+	glfwTerminate();
+	return 0;
+}
+
+bool initOpenGL() 
+{
+	if (!glfwInit())
 	{
 		std::cerr << "GLFW Initialization Failed" << std::endl;
-		return -1;
+		return false;
 	}
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	
+
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-	GLFWwindow* pWindow = NULL;
-		
 	if (gFullScreen)
 	{
 		GLFWmonitor* pMonitor = glfwGetPrimaryMonitor();
@@ -39,54 +64,41 @@ int main()
 
 		if (pVmode != NULL)
 		{
-			pWindow = glfwCreateWindow(pVmode->width, pVmode->height, APP_TITLE, pMonitor, NULL);
+			gWindow = glfwCreateWindow(pVmode->width, pVmode->height, APP_TITLE, pMonitor, NULL);
 		}
 	}
 	else
 	{
-		pWindow = glfwCreateWindow(gWindowWidth, gWindowHeight, APP_TITLE, NULL, NULL);
+		gWindow = glfwCreateWindow(gWindowWidth, gWindowHeight, APP_TITLE, NULL, NULL);
 	}
 
-	
-
-	if (pWindow == NULL)
+	if (gWindow == NULL)
 	{
 		std::cerr << "Failed to create Window" << std::endl;
 		glfwTerminate();
-		return -1;
+		return false;
 	}
 
-	glfwMakeContextCurrent(pWindow);
+	glfwMakeContextCurrent(gWindow);
 
-	glfwSetKeyCallback(pWindow, glfw_onKeyPressed);
+	glfwSetKeyCallback(gWindow, glfw_onKeyPressed);
 
 	// For enabling linking modern OpenGL
 	glewExperimental = GL_TRUE;
 
 	// Init Glew 
 
-	if (glewInit() != GLEW_OK) 
+	if (glewInit() != GLEW_OK)
 	{
 		std::cerr << "GLEW Initialization Failed" << std::endl;
 		glfwTerminate();
-		return -1;
+		return false;
 	}
 
-	while (!glfwWindowShouldClose(pWindow)) 
-	{
-		showFPS(pWindow);
-		glfwPollEvents();
+	glClearColor(0.23f, 0.30f, 0.47f, 1.0f);
 
-		glClearColor(0.23f, 0.30f, 0.47f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-
-		glfwSwapBuffers(pWindow); 
-	}
-
-	glfwTerminate();
-	return 0;
+	return true;
 }
-
 
 void glfw_onKeyPressed(GLFWwindow* window, int key, int scancode, int action, int mode) 
 {
