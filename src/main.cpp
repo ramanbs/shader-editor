@@ -15,6 +15,22 @@ bool gFullScreen = false;
 
 GLFWwindow* gWindow = NULL;
 
+const GLchar* vertexShaderSrc =
+"#version 330 core\n"
+"layout(location = 0) in vec3 pos;"
+"void main()"
+"{"
+"   gl_Position = vec4(pos.x, pos.y, pos.z, 1.0);"
+"}";
+
+const GLchar* fragShaderSrc =
+"#version 330 core\n"
+"out vec4 frag_color;"
+"void main()"
+"{"
+"  frag_color = vec4(0.0f, 1.0f, 0.0f, 1.0f);"
+"}";
+
 void glfw_onKeyPressed(GLFWwindow* window, int key, int scancode, int action, int mode);
 void showFPS(GLFWwindow* window);
 
@@ -28,6 +44,33 @@ int main()
 		return -1;
 	}
 
+	GLfloat vertices[] =
+	{
+		0.0f,  0.5f, 0.0f, // Top
+		0.5f, -0.5f, 0.0f, // Right
+	   -0.5f, -0.5f, 0.0f // Left
+	};
+
+	GLuint vbo, vao;
+
+	glGenBuffers(1, &vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //GL_STATIC_DRAW - create once and use it a lot
+
+	// Vertex Array Object - holds information for our buffer, when we draw. Instead of having mutiple buffers for different information ,
+
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+
+	// Need to tell vertex shader how the vertices are laid out
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(0);
+
+
+	GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vs, 1, &vertexShaderSrc, NULL);
+	
 	while (!glfwWindowShouldClose(gWindow)) 
 	{
 		showFPS(gWindow);
@@ -36,6 +79,12 @@ int main()
 		
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		glBindVertexArray(vao);
+
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glBindVertexArray(0);
+
+		
 		glfwSwapBuffers(gWindow); 
 	}
 
