@@ -18,17 +18,21 @@ GLFWwindow* gWindow = NULL;
 const GLchar* vertexShaderSrc =
 "#version 330 core\n"
 "layout(location = 0) in vec3 pos;"
+"layout(location = 1) in vec3 color;"
+"out vec3 vert_color;"
 "void main()"
 "{"
+"   vert_color = color;"
 "   gl_Position = vec4(pos.x, pos.y, pos.z, 1.0);"
 "}";
 
 const GLchar* fragShaderSrc =
 "#version 330 core\n"
+"in vec3 vert_color;"
 "out vec4 frag_color;"
 "void main()"
 "{"
-"  frag_color = vec4(0.0f, 1.0f, 0.0f, 1.0f);"
+"  frag_color = vec4(vert_color, 1.0f);"
 "}";
 
 void glfw_onKeyPressed(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -46,9 +50,10 @@ int main()
 
 	GLfloat vertices[] =
 	{
-		0.0f,  0.5f, 0.0f, // Top
-		0.5f, -0.5f, 0.0f, // Right
-	   -0.5f, -0.5f, 0.0f // Left
+		//position         //color
+		0.0f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // Top
+		0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // Right
+	   -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f  // Left
 	};
 
 	GLuint vbo, vao;
@@ -64,13 +69,60 @@ int main()
 
 	// Need to tell vertex shader how the vertices are laid out
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	// position 
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, NULL);
 	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, (GLvoid *) (sizeof(GLfloat) * 3));
+	glEnableVertexAttribArray(1);
 
 
 	GLuint vs = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vs, 1, &vertexShaderSrc, NULL);
+	glCompileShader(vs);
+
+	GLint result;
+	GLchar infoLog[512];
 	
+	glGetShaderiv(vs, GL_COMPILE_STATUS, &result);
+	
+	if (!result)
+	{
+		glGetShaderInfoLog(vs, sizeof(infoLog), NULL, infoLog);
+		std::cout << "Error! Vertex Shader failed to compile." << infoLog << std::endl;
+	}
+
+	GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fs, 1, &fragShaderSrc, NULL);
+	glCompileShader(fs);
+	
+	glGetShaderiv(fs, GL_COMPILE_STATUS, &result);
+
+	if (!result)
+	{
+		glGetShaderInfoLog(fs, sizeof(infoLog), NULL, infoLog);
+		std::cout << "Error! Fragment Shader failed to compile." << infoLog << std::endl;
+	}
+
+	GLuint shaderProgram = glCreateProgram();
+	
+	glAttachShader(shaderProgram, vs);
+	glAttachShader(shaderProgram, fs);
+	glLinkProgram(shaderProgram);
+
+	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &result);
+
+	if (!result)
+	{
+		glGetProgramInfoLog(shaderProgram, sizeof(infoLog), NULL, infoLog);
+		std::cout << "Error! Shader Program Linker Failure " << infoLog << std::endl;
+	}
+
+	glDeleteShader(vs);
+	glDeleteShader(fs);
+
+
+
 	while (!glfwWindowShouldClose(gWindow)) 
 	{
 		showFPS(gWindow);
@@ -78,6 +130,8 @@ int main()
 
 		
 		glClear(GL_COLOR_BUFFER_BIT);
+
+		glUseProgram(shaderProgram);
 
 		glBindVertexArray(vao);
 
@@ -87,6 +141,10 @@ int main()
 		
 		glfwSwapBuffers(gWindow); 
 	}
+
+	glDeleteProgram(shaderProgram);
+	glDeleteVertexArrays(1, &vao);
+	glDeleteBuffers(1, &vbo);
 
 	glfwTerminate();
 	return 0;
