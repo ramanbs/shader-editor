@@ -9,7 +9,7 @@ public :
 	OpenGLShaderProgram();
 	~OpenGLShaderProgram();
 
-	enum ShaderType { VERTEX, FRAGMENT, PROGRAM };
+	enum class ShaderType { VERTEX, FRAGMENT, PROGRAM };
 
 	bool loadShaders(const char* vsFilename, const char* fsFilename);
 	void use();
