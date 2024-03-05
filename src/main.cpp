@@ -29,21 +29,35 @@ int main()
 		return -1;
 	}
 
-	GLfloat vertices[] =
+	GLfloat vert_pos[] =
 	{
-		//position         //color
-		0.0f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // Top
-		0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // Right
-	   -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f  // Left
+		//position        
+		0.0f,  0.5f, 0.0f, // Top
+		0.5f, -0.5f, 0.0f, // Right
+	   -0.5f, -0.5f, 0.0f // Left
 	};
 
-	GLuint vbo, vao;
+	GLfloat vert_color[] = 
+	{
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f
+	};
 
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //GL_STATIC_DRAW - create once and use it a lot
+	GLuint vbo1, vbo2, vao;
 
-	// Vertex Array Object - holds information for our buffer, when we draw. Instead of having mutiple buffers for different information ,
+	//position
+	glGenBuffers(1, &vbo1);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo1);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vert_pos), vert_pos, GL_STATIC_DRAW); //GL_STATIC_DRAW - create once and use it a lot
+
+
+	//color
+    glGenBuffers(1, &vbo2);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo2);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vert_color), vert_color, GL_STATIC_DRAW);
+
+	// Vertex Array Object - holds information for our buffer, when we draw. Instead of having multiple buffers for different information ,
 
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
@@ -51,10 +65,13 @@ int main()
 	// Need to tell vertex shader how the vertices are laid out
 
 	// position 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, NULL);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo1);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL); // index, number of attributes, data type, normalized ? , stride, offset
 	glEnableVertexAttribArray(0);
 
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, (GLvoid *) (sizeof(GLfloat) * 3));
+	// color
+	glBindBuffer(GL_ARRAY_BUFFER, vbo2);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 	glEnableVertexAttribArray(1);
 
 	OpenGLShaderProgram shaderProgram;
@@ -82,8 +99,8 @@ int main()
 
 	
 	glDeleteVertexArrays(1, &vao);
-	glDeleteBuffers(1, &vbo);
-
+	glDeleteBuffers(1, &vbo1);
+	glDeleteBuffers(1, &vbo2);
 	glfwTerminate();
 	return 0;
 }
