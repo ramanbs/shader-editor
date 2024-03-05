@@ -93,7 +93,7 @@ void OpenGLShaderProgram::checkCompilerErrors(GLuint shader, ShaderType type)
 	}
 	else 
 	{
-		glGetShaderiv(shader, GL_LINK_STATUS, &status);
+		glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
 
 		if (status == GL_FALSE)
 		{

@@ -13,6 +13,7 @@ const int gWindowWidth = 800;
 const int gWindowHeight = 600;
 
 bool gFullScreen = false;
+bool gWireFrame = false;
 
 GLFWwindow* gWindow = NULL;
 
@@ -29,33 +30,26 @@ int main()
 		return -1;
 	}
 
-	GLfloat vert_pos[] =
+	GLfloat vertices[] =
 	{
-		//position        
-		0.0f,  0.5f, 0.0f, // Top
-		0.5f, -0.5f, 0.0f, // Right
-	   -0.5f, -0.5f, 0.0f // Left
+		-0.5f,  0.5f, 0.0f,
+		 0.5f,  0.5f, 0.0f,
+	     0.5f, -0.5f, 0.0f,
+		-0.5f, -0.5f, 0.0f
 	};
 
-	GLfloat vert_color[] = 
+	GLuint indices[] =
 	{
-        1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f
+		0, 1, 2,   //tri0
+		0, 2, 3   //tri1
 	};
 
-	GLuint vbo1, vbo2, vao;
+	GLuint vbo, ibo, vao;
 
 	//position
-	glGenBuffers(1, &vbo1);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo1);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vert_pos), vert_pos, GL_STATIC_DRAW); //GL_STATIC_DRAW - create once and use it a lot
-
-
-	//color
-    glGenBuffers(1, &vbo2);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo2);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vert_color), vert_color, GL_STATIC_DRAW);
+	glGenBuffers(1, &vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //GL_STATIC_DRAW - create once and use it a lot
 
 	// Vertex Array Object - holds information for our buffer, when we draw. Instead of having multiple buffers for different information ,
 
@@ -63,16 +57,14 @@ int main()
 	glBindVertexArray(vao);
 
 	// Need to tell vertex shader how the vertices are laid out
-
 	// position 
-	glBindBuffer(GL_ARRAY_BUFFER, vbo1);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL); // index, number of attributes, data type, normalized ? , stride, offset
 	glEnableVertexAttribArray(0);
 
-	// color
-	glBindBuffer(GL_ARRAY_BUFFER, vbo2);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-	glEnableVertexAttribArray(1);
+	glGenBuffers(1, &ibo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
 
 	OpenGLShaderProgram shaderProgram;
 	shaderProgram.loadShaders("shaders/basic.vert", "shaders/basic.frag");
@@ -90,7 +82,8 @@ int main()
 
 		glBindVertexArray(vao);
 
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		
 		glBindVertexArray(0);
 
 		
@@ -99,8 +92,7 @@ int main()
 
 	
 	glDeleteVertexArrays(1, &vao);
-	glDeleteBuffers(1, &vbo1);
-	glDeleteBuffers(1, &vbo2);
+	glDeleteBuffers(1, &vbo);
 	glfwTerminate();
 	return 0;
 }
@@ -167,6 +159,15 @@ void glfw_onKeyPressed(GLFWwindow* window, int key, int scancode, int action, in
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) 
 	{
 		glfwSetWindowShouldClose(window, GL_TRUE);
+	}
+
+	if (key == GLFW_KEY_W && action == GLFW_PRESS)
+	{
+		gWireFrame =! gWireFrame;
+		if (gWireFrame)
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		else
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
 }
 
