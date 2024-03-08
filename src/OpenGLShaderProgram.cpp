@@ -46,6 +46,8 @@ bool OpenGLShaderProgram::loadShaders(const char* vsFilename, const char* fsFile
 	glDeleteShader(vs);
 	glDeleteShader(fs);
 
+	m_uniformLocations.clear();
+
 	return true;
 
 }
@@ -106,4 +108,35 @@ void OpenGLShaderProgram::checkCompilerErrors(GLuint shader, ShaderType type)
 			std::cerr << "OpenGL Shader failed to compile." << errorLog << std::endl;
 		}
 	}
+}
+
+GLint OpenGLShaderProgram::getUniformLocation(const GLchar* name) 
+{
+	std::map<string, GLint>::iterator it = m_uniformLocations.find(name);
+
+	if (it == m_uniformLocations.end())
+	{
+		m_uniformLocations[name] = glGetUniformLocation(m_handle, name);
+	}
+
+	return m_uniformLocations[name];
+}
+
+void OpenGLShaderProgram::setUniform(const GLchar* name, const glm::vec2& v) 
+{
+	GLint loc = getUniformLocation(name);
+	glUniform2f(loc, v.x, v.y);
+}
+
+void OpenGLShaderProgram::setUniform(const GLchar* name, const glm::vec3& v) 
+{
+	GLint loc = getUniformLocation(name);
+	glUniform3f(loc, v.x, v.y, v.z);
+
+}
+
+void OpenGLShaderProgram::setUniform(const GLchar* name, const glm::vec4& v) 
+{
+    GLint loc = getUniformLocation(name);
+    glUniform4f(loc, v.x, v.y, v.z, v.w);
 }
