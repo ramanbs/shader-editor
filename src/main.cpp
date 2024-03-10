@@ -6,6 +6,7 @@
 #include "GL/glew.h" // included before glfw 
 #include "GLFW/glfw3.h"
 #include "OpenGLShaderProgram.h"
+#include "Texture2D.h"
 
 const char* APP_TITLE = "Shader Editor";
 
@@ -14,6 +15,8 @@ const int gWindowHeight = 600;
 
 bool gFullScreen = false;
 bool gWireFrame = false;
+
+const std::string  texture1Filename = "textures/demonslayer.png";
 
 GLFWwindow* gWindow = NULL;
 
@@ -32,10 +35,11 @@ int main()
 
 	GLfloat vertices[] =
 	{
-		-0.5f,  0.5f, 0.0f,
-		 0.5f,  0.5f, 0.0f,
-	     0.5f, -0.5f, 0.0f,
-		-0.5f, -0.5f, 0.0f
+		//pos				 //texture coords
+		-0.5f,  0.5f, 0.0f, 0.0f, 1.0f,   //top left
+		 0.5f,  0.5f, 0.0f, 1.0f, 1.0f,  // top right 
+	     0.5f, -0.5f, 0.0f, 1.0f, 0.0f, //  bottom right
+		-0.5f, -0.5f, 0.0f, 0.0f, 0.0f //   bottom left
 	};
 
 	GLuint indices[] =
@@ -58,8 +62,12 @@ int main()
 
 	// Need to tell vertex shader how the vertices are laid out
 	// position 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL); // index, number of attributes, data type, normalized ? , stride, offset
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), NULL); // index, number of attributes, data type, normalized ? , stride, offset
 	glEnableVertexAttribArray(0);
+
+
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
 
 	glGenBuffers(1, &ibo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
@@ -68,6 +76,9 @@ int main()
 
 	OpenGLShaderProgram shaderProgram;
 	shaderProgram.loadShaders("shaders/basic.vert", "shaders/basic.frag");
+
+	Texture2D texture;
+	texture.loadTexture(texture1Filename, true);
 
 
 	while (!glfwWindowShouldClose(gWindow)) 
@@ -78,18 +89,9 @@ int main()
 		
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		texture.bind();
+
 		shaderProgram.use();
-
-		GLfloat time = glfwGetTime();
-
-		glm::vec2 movePos;
-
-		movePos.x = sin(time) / 2;
-		movePos.y = sin(time) / 2;
-
-		shaderProgram.setUniform("posOffset", movePos);
-		GLfloat blueColor = (sin(time) / 2) + 0.5f;
-		shaderProgram.setUniform("vertColor", glm::vec4(0.0f, 0.0f, blueColor, 1.0f));
 
 		glBindVertexArray(vao);
 
