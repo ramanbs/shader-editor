@@ -14,6 +14,8 @@ public :
 
 	enum class ShaderType { VERTEX, FRAGMENT, PROGRAM };
 
+	GLuint getProgramHandle() { return m_handle; }
+
 	bool loadShaders(const char* vsFilename, const char* fsFilename);
 	void use();
 

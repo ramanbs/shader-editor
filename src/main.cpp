@@ -18,6 +18,8 @@ bool gWireFrame = false;
 
 const std::string  texture1Filename = "textures/demonslayer.png";
 
+const std::string  texture2Filename = "textures/giyu.png";
+
 GLFWwindow* gWindow = NULL;
 
 void glfw_onKeyPressed(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -77,9 +79,11 @@ int main()
 	OpenGLShaderProgram shaderProgram;
 	shaderProgram.loadShaders("shaders/basic.vert", "shaders/basic.frag");
 
-	Texture2D texture;
-	texture.loadTexture(texture1Filename, true);
+	Texture2D texture1;
+	texture1.loadTexture(texture1Filename, true);
 
+	Texture2D texture2;
+	texture2.loadTexture(texture2Filename, true);
 
 	while (!glfwWindowShouldClose(gWindow)) 
 	{
@@ -89,9 +93,13 @@ int main()
 		
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		texture.bind();
+		texture1.bind(0);
+		texture2.bind(1);
 
 		shaderProgram.use();
+
+		glUniform1i(glGetUniformLocation(shaderProgram.getProgramHandle(), "myTexture1"), 0);
+		glUniform1i(glGetUniformLocation(shaderProgram.getProgramHandle(), "myTexture2"), 1);
 
 		glBindVertexArray(vao);
 
