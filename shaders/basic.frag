@@ -3,11 +3,9 @@
 in vec2 TexCoord;
 out vec4 frag_color;
 
-uniform sampler2D myTexture1;
-uniform sampler2D myTexture2;
+uniform sampler2D myTexture;
 
 void main()
 {
-// linear interpolation of two textures for blending
-  frag_color = mix(texture(myTexture1, TexCoord), texture(myTexture2, TexCoord), 0.4);
+    frag_color = texture(myTexture, TexCoord);
 };

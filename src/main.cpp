@@ -5,24 +5,26 @@
 
 #include "GL/glew.h" // included before glfw 
 #include "GLFW/glfw3.h"
+#include "glm/gtc/matrix_transform.hpp"
 #include "OpenGLShaderProgram.h"
 #include "Texture2D.h"
 
 const char* APP_TITLE = "Shader Editor";
 
-const int gWindowWidth = 800;
-const int gWindowHeight = 600;
+int gWindowWidth = 1024;
+int gWindowHeight = 768;
 
 bool gFullScreen = false;
 bool gWireFrame = false;
 
 const std::string  texture1Filename = "textures/demonslayer.png";
 
-const std::string  texture2Filename = "textures/giyu.png";
+//const std::string  texture2Filename = "textures/giyu.png";
 
 GLFWwindow* gWindow = NULL;
 
 void glfw_onKeyPressed(GLFWwindow* window, int key, int scancode, int action, int mode);
+void glfw_OnFrameBufferSize(GLFWwindow* window, int width, int height);
 void showFPS(GLFWwindow* window);
 
 bool initOpenGL();
@@ -37,20 +39,61 @@ int main()
 
 	GLfloat vertices[] =
 	{
-		//pos				 //texture coords
-		-0.5f,  0.5f, 0.0f, 0.0f, 1.0f,   //top left
-		 0.5f,  0.5f, 0.0f, 1.0f, 1.0f,  // top right 
-	     0.5f, -0.5f, 0.0f, 1.0f, 0.0f, //  bottom right
-		-0.5f, -0.5f, 0.0f, 0.0f, 0.0f //   bottom left
+        // position			// tex coords
+
+		// front face
+		-1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
+		 1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
+		 1.0f,  1.0f,  1.0f, 1.0f, 1.0f,
+		-1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
+		-1.0f, -1.0f,  1.0f, 0.0f, 0.0f,
+		 1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
+
+		// back face
+		-1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
+		 1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
+		 1.0f,  1.0f, -1.0f, 1.0f, 1.0f,
+		-1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
+		-1.0f, -1.0f, -1.0f, 0.0f, 0.0f,
+		 1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
+
+		// left face
+		-1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
+		-1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
+		-1.0f,  1.0f,  1.0f, 1.0f, 1.0f,
+		-1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
+		-1.0f, -1.0f, -1.0f, 0.0f, 0.0f,
+		-1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
+
+		// right face
+		 1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
+		 1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
+		 1.0f,  1.0f, -1.0f, 1.0f, 1.0f,
+		 1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
+		 1.0f, -1.0f,  1.0f, 0.0f, 0.0f,
+		 1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
+
+		// top face
+		-1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
+		 1.0f,  1.0f,  1.0f, 1.0f, 0.0f,
+		 1.0f,  1.0f, -1.0f, 1.0f, 1.0f,
+		-1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
+		-1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
+		 1.0f,  1.0f,  1.0f, 1.0f, 0.0f,
+
+		 // bottom face
+		 -1.0f, -1.0f,  1.0f, 0.0f, 1.0f,
+		  1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
+		  1.0f, -1.0f,  1.0f, 1.0f, 1.0f,
+		 -1.0f, -1.0f,  1.0f, 0.0f, 1.0f,
+		 -1.0f, -1.0f, -1.0f, 0.0f, 0.0f,
+		  1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
 	};
 
-	GLuint indices[] =
-	{
-		0, 1, 2,   //tri0
-		0, 2, 3   //tri1
-	};
+	glm::vec3 cubePos = glm::vec3(0.0f, 0.0f, -5.0f);
+	
 
-	GLuint vbo, ibo, vao;
+	GLuint vbo, vao;
 
 	//position
 	glGenBuffers(1, &vbo);
@@ -71,44 +114,66 @@ int main()
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(1);
 
-	glGenBuffers(1, &ibo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-
 	OpenGLShaderProgram shaderProgram;
 	shaderProgram.loadShaders("shaders/basic.vert", "shaders/basic.frag");
 
 	Texture2D texture1;
 	texture1.loadTexture(texture1Filename, true);
 
-	Texture2D texture2;
-	texture2.loadTexture(texture2Filename, true);
+	//Texture2D texture2;
+	//texture2.loadTexture(texture2Filename, true);
+
+	float cubeAngle = 0.0f;
+	double lastTime = glfwGetTime();
 
 	while (!glfwWindowShouldClose(gWindow)) 
 	{
 		showFPS(gWindow);
+
+		double currentTime = glfwGetTime();
+		double deltaTime = currentTime - lastTime;
+
 		glfwPollEvents();
 
 		
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		texture1.bind(0);
-		texture2.bind(1);
+		//texture2.bind(1);
+
+		cubeAngle += (float)(deltaTime * 50.0f);
+		
+		if (cubeAngle >= 360.0f)
+			cubeAngle = 0.0f;
+
+		glm::mat4 model(1.0f), view(1.0f), projection(1.0f);
+
+		model = glm::translate(model, cubePos) * glm::rotate(model, glm::radians(cubeAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+
+		glm::vec3 camPos(0.0f, 0.0f, 0.0f);
+		glm::vec3 targetPos(0.0f, 0.0f, -1.0f);
+		glm::vec3 up(0.0f, 1.0f, 0.0f);
+
+		view = glm::lookAt(camPos, targetPos, up); // need to look at construction of view matrix again
+
+		projection = glm::perspective(glm::radians(45.0f), (float)gWindowWidth / (float)gWindowHeight, 0.1f, 100.0f);
 
 		shaderProgram.use();
 
-		glUniform1i(glGetUniformLocation(shaderProgram.getProgramHandle(), "myTexture1"), 0);
-		glUniform1i(glGetUniformLocation(shaderProgram.getProgramHandle(), "myTexture2"), 1);
+		shaderProgram.setUniform("model", model);
+		shaderProgram.setUniform("view", view);
+		shaderProgram.setUniform("projection", projection);
 
 		glBindVertexArray(vao);
 
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 		
 		glBindVertexArray(0);
 
 		
 		glfwSwapBuffers(gWindow); 
+
+		lastTime = currentTime;
 	}
 
 	
@@ -171,6 +236,8 @@ bool initOpenGL()
 	}
 
 	glClearColor(0.23f, 0.30f, 0.47f, 1.0f);
+	glViewport(0, 0, gWindowWidth, gWindowHeight);
+	glEnable(GL_DEPTH_TEST);
 
 	return true;
 }
@@ -191,6 +258,15 @@ void glfw_onKeyPressed(GLFWwindow* window, int key, int scancode, int action, in
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
 }
+
+void glfw_OnFrameBufferSize(GLFWwindow* window, int width, int height) 
+{
+	gWindowWidth = width;
+	gWindowHeight = height;
+
+	glViewport(0, 0, gWindowWidth, gWindowHeight);
+}
+
 
 void showFPS(GLFWwindow* window) 
 {
