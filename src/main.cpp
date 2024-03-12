@@ -8,6 +8,7 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "OpenGLShaderProgram.h"
 #include "Texture2D.h"
+#include "Camera.h"
 
 const char* APP_TITLE = "Shader Editor";
 
@@ -19,12 +20,21 @@ bool gWireFrame = false;
 
 const std::string  texture1Filename = "textures/demonslayer.png";
 
-//const std::string  texture2Filename = "textures/giyu.png";
+const std::string  texture2Filename = "textures/grid.jpg";
 
 GLFWwindow* gWindow = NULL;
 
+
+OrbitCamera orbitCamera;
+float gYaw = 0.0f;
+float gPitch = 0.0f;
+float gRadius = 10.0f;
+const float MOUSE_SENSITIVITY = 0.25f;
+
 void glfw_onKeyPressed(GLFWwindow* window, int key, int scancode, int action, int mode);
 void glfw_OnFrameBufferSize(GLFWwindow* window, int width, int height);
+void glfw_onMouseMove(GLFWwindow* window, double posX, double posY);
+
 void showFPS(GLFWwindow* window);
 
 bool initOpenGL();
@@ -91,7 +101,7 @@ int main()
 	};
 
 	glm::vec3 cubePos = glm::vec3(0.0f, 0.0f, -5.0f);
-	
+	glm::vec3 floorPos = glm::vec3(0.0f, -1.0f, 0.0f); 
 
 	GLuint vbo, vao;
 
@@ -120,8 +130,8 @@ int main()
 	Texture2D texture1;
 	texture1.loadTexture(texture1Filename, true);
 
-	//Texture2D texture2;
-	//texture2.loadTexture(texture2Filename, true);
+	Texture2D texture2;
+	texture2.loadTexture(texture2Filename, true);
 
 	float cubeAngle = 0.0f;
 	double lastTime = glfwGetTime();
@@ -139,22 +149,17 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		texture1.bind(0);
-		//texture2.bind(1);
-
-		cubeAngle += (float)(deltaTime * 50.0f);
 		
-		if (cubeAngle >= 360.0f)
-			cubeAngle = 0.0f;
 
 		glm::mat4 model(1.0f), view(1.0f), projection(1.0f);
 
-		model = glm::translate(model, cubePos) * glm::rotate(model, glm::radians(cubeAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+		orbitCamera.setLookAt(cubePos);
+		orbitCamera.rotate(gYaw, gPitch);
+		orbitCamera.setRadius(gRadius);
 
-		glm::vec3 camPos(0.0f, 0.0f, 0.0f);
-		glm::vec3 targetPos(0.0f, 0.0f, -1.0f);
-		glm::vec3 up(0.0f, 1.0f, 0.0f);
+		model = glm::translate(model, cubePos);
 
-		view = glm::lookAt(camPos, targetPos, up); // need to look at construction of view matrix again
+		view = orbitCamera.getViewMatrix(); // need to look at construction of view matrix again
 
 		projection = glm::perspective(glm::radians(45.0f), (float)gWindowWidth / (float)gWindowHeight, 0.1f, 100.0f);
 
@@ -166,6 +171,13 @@ int main()
 
 		glBindVertexArray(vao);
 
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		texture2.bind(0);
+
+		model = glm::translate(model, floorPos) * glm::scale(model, glm::vec3(10.0f, 0.01f, 10.0f));
+
+		shaderProgram.setUniform("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		
 		glBindVertexArray(0);
@@ -222,6 +234,8 @@ bool initOpenGL()
 	glfwMakeContextCurrent(gWindow);
 
 	glfwSetKeyCallback(gWindow, glfw_onKeyPressed);
+	glfwSetFramebufferSizeCallback(gWindow, glfw_OnFrameBufferSize);
+	glfwSetCursorPosCallback(gWindow, glfw_onMouseMove);
 
 	// For enabling linking modern OpenGL
 	glewExperimental = GL_TRUE;
@@ -257,6 +271,29 @@ void glfw_onKeyPressed(GLFWwindow* window, int key, int scancode, int action, in
 		else
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
+}
+void glfw_onMouseMove(GLFWwindow* window, double posX, double posY) 
+{
+	static glm::vec2 lastMousePos = glm::vec2(0, 0);
+
+	// Update angles based on Left Mouse Button input to orbit around the cube
+	if (glfwGetMouseButton(gWindow, GLFW_MOUSE_BUTTON_LEFT) == 1)
+	{
+		// each pixel represents a quarter of a degree rotation (this is our mouse sensitivity)
+		gYaw -= ((float)posX - lastMousePos.x) * MOUSE_SENSITIVITY;
+		gPitch += ((float)posY - lastMousePos.y) * MOUSE_SENSITIVITY;
+	}
+
+	// Change orbit camera radius with the Right Mouse Button
+	if (glfwGetMouseButton(gWindow, GLFW_MOUSE_BUTTON_RIGHT) == 1)
+	{
+		float dx = 0.01f * ((float)posX - lastMousePos.x);
+		float dy = 0.01f * ((float)posY - lastMousePos.y);
+		gRadius += dx - dy;
+	}
+
+	lastMousePos.x = (float)posX;
+	lastMousePos.y = (float)posY;
 }
 
 void glfw_OnFrameBufferSize(GLFWwindow* window, int width, int height) 
