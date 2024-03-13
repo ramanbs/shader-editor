@@ -25,16 +25,18 @@ const std::string  texture2Filename = "textures/grid.jpg";
 GLFWwindow* gWindow = NULL;
 
 
-OrbitCamera orbitCamera;
-float gYaw = 0.0f;
-float gPitch = 0.0f;
-float gRadius = 10.0f;
-const float MOUSE_SENSITIVITY = 0.25f;
+FPSCamera fpsCamera(glm::vec3(0.0f, 3.0f, 10.0f));
+
+const double ZOOM_SENSITIVITY = -3.0f;
+const float MOVE_SPEED = 5.0f;
+const float MOUSE_SENSITIVITY = 0.1f;
 
 void glfw_onKeyPressed(GLFWwindow* window, int key, int scancode, int action, int mode);
 void glfw_OnFrameBufferSize(GLFWwindow* window, int width, int height);
 void glfw_onMouseMove(GLFWwindow* window, double posX, double posY);
+void glfw_onMouseScroll(GLFWwindow* window, double deltaX, double deltaY);
 
+void updateFPSCameraMouseInput(double elapsedTime);
 void showFPS(GLFWwindow* window);
 
 bool initOpenGL();
@@ -144,7 +146,7 @@ int main()
 		double deltaTime = currentTime - lastTime;
 
 		glfwPollEvents();
-
+		updateFPSCameraMouseInput(deltaTime);
 		
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -153,15 +155,12 @@ int main()
 
 		glm::mat4 model(1.0f), view(1.0f), projection(1.0f);
 
-		orbitCamera.setLookAt(cubePos);
-		orbitCamera.rotate(gYaw, gPitch);
-		orbitCamera.setRadius(gRadius);
 
 		model = glm::translate(model, cubePos);
 
-		view = orbitCamera.getViewMatrix(); // need to look at construction of view matrix again
+		view = fpsCamera.getViewMatrix(); // need to look at construction of view matrix again
 
-		projection = glm::perspective(glm::radians(45.0f), (float)gWindowWidth / (float)gWindowHeight, 0.1f, 100.0f);
+		projection = glm::perspective(glm::radians(fpsCamera.getFOV()), (float)gWindowWidth / (float)gWindowHeight, 0.1f, 100.0f);
 
 		shaderProgram.use();
 
@@ -236,6 +235,11 @@ bool initOpenGL()
 	glfwSetKeyCallback(gWindow, glfw_onKeyPressed);
 	glfwSetFramebufferSizeCallback(gWindow, glfw_OnFrameBufferSize);
 	glfwSetCursorPosCallback(gWindow, glfw_onMouseMove);
+	glfwSetScrollCallback(gWindow, glfw_onMouseScroll);
+
+	//Hides and grabs cursor, unlimited movement
+	glfwSetInputMode(gWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // disables cursor
+	glfwSetCursorPos(gWindow, gWindowWidth / 2.0f, gWindowHeight / 2.0f);
 
 	// For enabling linking modern OpenGL
 	glewExperimental = GL_TRUE;
@@ -263,7 +267,7 @@ void glfw_onKeyPressed(GLFWwindow* window, int key, int scancode, int action, in
 		glfwSetWindowShouldClose(window, GL_TRUE);
 	}
 
-	if (key == GLFW_KEY_W && action == GLFW_PRESS)
+	if (key == GLFW_KEY_T && action == GLFW_PRESS)
 	{
 		gWireFrame =! gWireFrame;
 		if (gWireFrame)
@@ -274,26 +278,16 @@ void glfw_onKeyPressed(GLFWwindow* window, int key, int scancode, int action, in
 }
 void glfw_onMouseMove(GLFWwindow* window, double posX, double posY) 
 {
-	static glm::vec2 lastMousePos = glm::vec2(0, 0);
+	// Do nothing
+}
 
-	// Update angles based on Left Mouse Button input to orbit around the cube
-	if (glfwGetMouseButton(gWindow, GLFW_MOUSE_BUTTON_LEFT) == 1)
-	{
-		// each pixel represents a quarter of a degree rotation (this is our mouse sensitivity)
-		gYaw -= ((float)posX - lastMousePos.x) * MOUSE_SENSITIVITY;
-		gPitch += ((float)posY - lastMousePos.y) * MOUSE_SENSITIVITY;
-	}
+void glfw_onMouseScroll(GLFWwindow* window, double deltaX, double deltaY)
+{
+	double fov = fpsCamera.getFOV() + deltaY * ZOOM_SENSITIVITY;
 
-	// Change orbit camera radius with the Right Mouse Button
-	if (glfwGetMouseButton(gWindow, GLFW_MOUSE_BUTTON_RIGHT) == 1)
-	{
-		float dx = 0.01f * ((float)posX - lastMousePos.x);
-		float dy = 0.01f * ((float)posY - lastMousePos.y);
-		gRadius += dx - dy;
-	}
+	fov = glm::clamp(fov, 1.0, 120.0);
 
-	lastMousePos.x = (float)posX;
-	lastMousePos.y = (float)posY;
+	fpsCamera.setFOV((float)fov);
 }
 
 void glfw_OnFrameBufferSize(GLFWwindow* window, int width, int height) 
@@ -302,6 +296,40 @@ void glfw_OnFrameBufferSize(GLFWwindow* window, int width, int height)
 	gWindowHeight = height;
 
 	glViewport(0, 0, gWindowWidth, gWindowHeight);
+}
+
+void updateFPSCameraMouseInput(double elapsedTime)
+{
+	//Camera orientation 
+	double mouseX, mouseY;
+
+	// Get the current mouse cursor position delta
+	glfwGetCursorPos(gWindow, &mouseX, &mouseY);
+
+	// Rotate the camera the difference in mouse distance from the center screen. Multiply this delay by a speed scaler 
+	fpsCamera.rotate((float)(gWindowWidth / 2.0 - mouseX) * MOUSE_SENSITIVITY, (float)(gWindowHeight / 2.0 - mouseY) * MOUSE_SENSITIVITY);
+
+	// reset the mouse cursor to center of screen every frame since above calculation fo pitch and yaw is dependent on it
+	glfwSetCursorPos(gWindow, gWindowWidth / 2.0, gWindowHeight / 2.0);
+
+	// Camera FPS movement
+
+	if (glfwGetKey(gWindow, GLFW_KEY_W) == GLFW_PRESS)
+		fpsCamera.move(MOVE_SPEED * (float)elapsedTime * fpsCamera.getLook());
+	else if (glfwGetKey(gWindow, GLFW_KEY_S) == GLFW_PRESS)
+		fpsCamera.move(MOVE_SPEED * (float)elapsedTime * -fpsCamera.getLook());
+
+	// Strafe left/ right
+	if (glfwGetKey(gWindow, GLFW_KEY_D) == GLFW_PRESS)
+		fpsCamera.move(MOVE_SPEED * (float)elapsedTime * fpsCamera.getRight());
+	else if (glfwGetKey(gWindow, GLFW_KEY_A) == GLFW_PRESS)
+		fpsCamera.move(MOVE_SPEED * (float)elapsedTime * -fpsCamera.getRight());
+
+	// Up / Down
+	if (glfwGetKey(gWindow, GLFW_KEY_Z) == GLFW_PRESS)
+		fpsCamera.move(MOVE_SPEED * (float)elapsedTime * fpsCamera.getUp());
+	else if (glfwGetKey(gWindow, GLFW_KEY_X) == GLFW_PRESS)
+		fpsCamera.move(MOVE_SPEED * (float)elapsedTime * -fpsCamera.getUp());
 }
 
 
