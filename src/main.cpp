@@ -9,6 +9,7 @@
 #include "OpenGLShaderProgram.h"
 #include "Texture2D.h"
 #include "Camera.h"
+#include "Mesh.h"
 
 const char* APP_TITLE = "Shader Editor";
 
@@ -49,93 +50,54 @@ int main()
 		return -1;
 	}
 
-	GLfloat vertices[] =
+	// Model positions
+	glm::vec3 modelPos[] = 
 	{
-        // position			// tex coords
-
-		// front face
-		-1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
-		 1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
-		 1.0f,  1.0f,  1.0f, 1.0f, 1.0f,
-		-1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
-		-1.0f, -1.0f,  1.0f, 0.0f, 0.0f,
-		 1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
-
-		// back face
-		-1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
-		 1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
-		 1.0f,  1.0f, -1.0f, 1.0f, 1.0f,
-		-1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
-		-1.0f, -1.0f, -1.0f, 0.0f, 0.0f,
-		 1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
-
-		// left face
-		-1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
-		-1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
-		-1.0f,  1.0f,  1.0f, 1.0f, 1.0f,
-		-1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
-		-1.0f, -1.0f, -1.0f, 0.0f, 0.0f,
-		-1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
-
-		// right face
-		 1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
-		 1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
-		 1.0f,  1.0f, -1.0f, 1.0f, 1.0f,
-		 1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
-		 1.0f, -1.0f,  1.0f, 0.0f, 0.0f,
-		 1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
-
-		// top face
-		-1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
-		 1.0f,  1.0f,  1.0f, 1.0f, 0.0f,
-		 1.0f,  1.0f, -1.0f, 1.0f, 1.0f,
-		-1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
-		-1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
-		 1.0f,  1.0f,  1.0f, 1.0f, 0.0f,
-
-		 // bottom face
-		 -1.0f, -1.0f,  1.0f, 0.0f, 1.0f,
-		  1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
-		  1.0f, -1.0f,  1.0f, 1.0f, 1.0f,
-		 -1.0f, -1.0f,  1.0f, 0.0f, 1.0f,
-		 -1.0f, -1.0f, -1.0f, 0.0f, 0.0f,
-		  1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
+		glm::vec3(-3.5f, 0.0f, 0.0f),	// crate1
+		glm::vec3(3.5f, 0.0f, 0.0f),	// crate2
+		glm::vec3(0.0f, 0.0f, -2.0f),	// robot
+		glm::vec3(0.0f, 0.0f, 0.0f),	// floor
+		glm::vec3(0.0f, 0.0f, 2.0f),	// pin
+		glm::vec3(-2.0f, 0.0f, 2.0f)	// bunny
 	};
 
-	glm::vec3 cubePos = glm::vec3(0.0f, 0.0f, -5.0f);
-	glm::vec3 floorPos = glm::vec3(0.0f, -1.0f, 0.0f); 
-
-	GLuint vbo, vao;
-
-	//position
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //GL_STATIC_DRAW - create once and use it a lot
-
-	// Vertex Array Object - holds information for our buffer, when we draw. Instead of having multiple buffers for different information ,
-
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-
-	// Need to tell vertex shader how the vertices are laid out
-	// position 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), NULL); // index, number of attributes, data type, normalized ? , stride, offset
-	glEnableVertexAttribArray(0);
+	glm::vec3 modelScale[] = 
+	{
+		glm::vec3(1.0f, 1.0f, 1.0f),  //crate
+		glm::vec3(1.0f, 1.0f, 1.0f),  //wood crate
+		glm::vec3(1.0f, 1.0f, 1.0f),  //robot
+		glm::vec3(10.0f, 1.0f, 10.0f),  //floor
+		glm::vec3(0.1f, 0.1f, 0.1f),  //pin
+		glm::vec3(0.7f, 0.7f, 0.7f)  //bunny
+	};
 
 
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(1);
+	const int numModels = 6;
+	Mesh mesh[numModels];
+	Texture2D texture[numModels];
+
+
+	mesh[0].loadOBJ("models/crate.obj");
+	mesh[1].loadOBJ("models/woodcrate.obj");
+	mesh[2].loadOBJ("models/robot.obj");
+	mesh[3].loadOBJ("models/floor.obj");
+	mesh[4].loadOBJ("models/bowling_pin.obj");
+	mesh[5].loadOBJ("models/bunny.obj");
+	
+	texture[0].loadTexture("textures/crate.jpg", true);
+	texture[1].loadTexture("textures/woodcrate_diffuse.jpg", true);
+	texture[2].loadTexture("textures/robot_diffuse.jpg", true);
+	texture[3].loadTexture("textures/tile_floor.jpg", true);
+	texture[4].loadTexture("textures/AMF.tga", true);
+	texture[5].loadTexture("textures/bunny_diffuse.jpg", true);
+	
 
 	OpenGLShaderProgram shaderProgram;
 	shaderProgram.loadShaders("shaders/basic.vert", "shaders/basic.frag");
 
-	Texture2D texture1;
-	texture1.loadTexture(texture1Filename, true);
 
-	Texture2D texture2;
-	texture2.loadTexture(texture2Filename, true);
 
-	float cubeAngle = 0.0f;
+	float angle = 0.0f;
 	double lastTime = glfwGetTime();
 
 	while (!glfwWindowShouldClose(gWindow)) 
@@ -150,46 +112,34 @@ int main()
 		
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		texture1.bind(0);
-		
-
 		glm::mat4 model(1.0f), view(1.0f), projection(1.0f);
-
-
-		model = glm::translate(model, cubePos);
 
 		view = fpsCamera.getViewMatrix(); // need to look at construction of view matrix again
 
-		projection = glm::perspective(glm::radians(fpsCamera.getFOV()), (float)gWindowWidth / (float)gWindowHeight, 0.1f, 100.0f);
+		projection = glm::perspective(glm::radians(fpsCamera.getFOV()), (float)gWindowWidth / (float)gWindowHeight, 0.1f, 200.0f);
 
 		shaderProgram.use();
 
-		shaderProgram.setUniform("model", model);
 		shaderProgram.setUniform("view", view);
 		shaderProgram.setUniform("projection", projection);
 
-		glBindVertexArray(vao);
 
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		for (int i = 0; i < numModels; i++)
+		{
+			model = glm::translate(glm::mat4(1.0f), modelPos[i]) * glm::scale(glm::mat4(1.0f), modelScale[i]);
 
-		texture2.bind(0);
+			shaderProgram.setUniform("model", model);
 
-		model = glm::translate(model, floorPos) * glm::scale(model, glm::vec3(10.0f, 0.01f, 10.0f));
-
-		shaderProgram.setUniform("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		
-		glBindVertexArray(0);
-
+			texture[i].bind(0);
+			mesh[i].draw();
+			texture[i].unbind(0);
+		}
 		
 		glfwSwapBuffers(gWindow); 
 
 		lastTime = currentTime;
 	}
 
-	
-	glDeleteVertexArrays(1, &vao);
-	glDeleteBuffers(1, &vbo);
 	glfwTerminate();
 	return 0;
 }
